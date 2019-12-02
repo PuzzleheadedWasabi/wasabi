@@ -37,10 +37,9 @@ namespace CHVP3
 
             DataContext = LogEntries = new ObservableCollection<LogEntry>();
 
-            AddEntry(new LogEntry("Started CHVP"));
-            Debug.WriteLine("BOO");
+            Log("Started CHVP");
 
-            Timer = new Timer(x => CheckIfVLCRunning(), null, 0, 1000);
+            Timer = new Timer(x => CheckIfVLCRunning(), null, 0, 300);
         }
 
         private Process controllingProcess = null;
@@ -84,94 +83,37 @@ namespace CHVP3
 
             return new string[] { pathToVLC, filePath };
         }
-
-        //private string GetVLCPath()
-        //{
-
-        //    string InstallPath = (string)Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\VideoLAN\VLC", "InstallDir", null);
-
-        //    Log(InstallPath);
-
-        //    //try
-        //    //{
-        //    //    using (RegistryKey key = Registry.LocalMachine.OpenSubKey("SOFTWARE"))
-        //    //    {
-        //    //        if (key != null)
-        //    //        {
-        //    //            Log(key.GetSubKeyNames().Length + "");
-        //    //            Log(key.GetSubKeyNames()[0]);
-
-        //    //            Log("aaaa");
-
-        //    //            Object o = key.GetValue("InstallDir");
-        //    //            if (o != null)
-        //    //            {
-        //    //                Log("Found VLC Path: " + o.ToString());
-        //    //                return o.ToString();
-        //    //            }
-        //    //        }
-        //    //    }
-        //    //}
-
-
-        //    //catch (Exception ex)  //just for demonstration...it's always best to handle specific exceptions
-        //    //{
-        //    //    Log("Exception when getting VLC Path");
-        //    //}
-
-        //    //Log("Failed to get VLC Path");
-
-        //    return null;
-
-        //}
-
-
+        
         private void ControlVLC(Process process, string[] vlcDetails)
         {
             process.Kill();
 
-            IPEndPoint socketAddress = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 54174);
-
-            //string args = $"--intf rc play \"{vlcDetails[1]}\"";
-            string args = "--fullscreen -I rc --rc-host " + socketAddress.ToString() + $" \"{vlcDetails[1]}\"";
-            Log("Running command: " + args);
-            Debug.WriteLine(args);
-
-            Process controllingProcess = new Process();
-            controllingProcess.StartInfo.UseShellExecute = false;
-            controllingProcess.StartInfo.FileName = vlcDetails[0];
-            controllingProcess.StartInfo.Arguments = args;
-            controllingProcess.Start();
-
-            Log("PID of controllingProcess is " + controllingProcess.Id);
+            VLCInterface vlcInterface = new VLCInterface(vlcDetails[0], vlcDetails[1], Log);
 
             try
             {
-                Socket vlcRcSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                vlcRcSocket.Connect(socketAddress);
-                // start another thread to look for responses and display them
-                //Task listener = Task.Factory.StartNew(() => VLCInterface.Receive(vlcRcSocket));
+                controllingProcess = vlcInterface.Connect();
 
                 Log("Connected to VLC process!");
 
-                Thread.Sleep(1500);
-                VLCInterface.Send(vlcRcSocket, "seek 20");
+                Thread.Sleep(700);
+                vlcInterface.Send("seek 20");
 
-                Thread.Sleep(1500);
-                VLCInterface.Send(vlcRcSocket, "pause");
+                Thread.Sleep(700);
+                vlcInterface.Send("pause");
 
-                Thread.Sleep(1500);
-                VLCInterface.Send(vlcRcSocket, "pause");
-                VLCInterface.Send(vlcRcSocket, "get_time");
+                Thread.Sleep(700);
+                vlcInterface.Send("pause");
+                Log("Time is " + vlcInterface.GetTime());
 
-                Thread.Sleep(1500);
+                Thread.Sleep(700);
 
-                VLCInterface.Send(vlcRcSocket, "quit"); // close vlc rc interface and disconnect
-                vlcRcSocket.Disconnect(false);
+                vlcInterface.Send("quit"); // close vlc rc interface and disconnect
+                vlcInterface.Disconnect();
             }
             finally
             {
-                controllingProcess.Kill();
+                vlcInterface.Kill();
             }
 
             //Thread.Sleep(2000);
@@ -211,6 +153,7 @@ namespace CHVP3
             {
                 if (!process.ProcessName.ToLower().Equals("vlc")) continue;
                 String cli = GetCommandLine(process);
+                if (cli == null) continue;
                 if (cli.ToLower().Contains("--intf rc")) continue;
                 Debug.WriteLine("Found VLC, ID: {0}, CLI: {1}", process.Id, GetCommandLine(process));
                 return process;
@@ -224,22 +167,6 @@ namespace CHVP3
             Dispatcher.BeginInvoke((Action)(() => LogEntries.Add(new LogEntry(message))));
         }
 
-        private void AddEntry(LogEntry entry)
-        {
-            Dispatcher.BeginInvoke((Action)(() => LogEntries.Add(entry)));
-        }
-
-        private LogEntry GetRandomEntry()
-        {
-            if (random.Next(1, 10) > 1)
-                return new LogEntry(string.Join(" ", "This is a random entry"));
-
-            return new CollapsibleLogEntry(
-                string.Join(" ", "This is a random entry"),
-                Enumerable.Range(5, random.Next(5, 10)).Select(i => GetRandomEntry()).ToList()
-            );
-        }
-
         private static string GetCommandLine(Process process)
         {
             using (ManagementObjectSearcher searcher = new ManagementObjectSearcher("SELECT CommandLine FROM Win32_Process WHERE ProcessId = " + process.Id))
@@ -250,10 +177,6 @@ namespace CHVP3
 
         }
 
-
-
     }
-
-
 
 }

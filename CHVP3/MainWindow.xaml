@@ -85,9 +85,6 @@
     </Window.Resources>
 
     <TabControl>
-        <TabItem Header="Settings">
-            <Label Content="Settings go here..." />
-        </TabItem>
 
         <TabItem Header="Log">
             <DockPanel>
@@ -109,6 +106,10 @@
                     </ItemsControl.ItemsPanel>
                 </ItemsControl>
             </DockPanel>
+        </TabItem>
+        
+        <TabItem Header="Settings">
+            <Label Content="Settings go here..." />
         </TabItem>
     </TabControl>
 </Window>

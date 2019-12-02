@@ -84,23 +84,31 @@
         </DataTemplate>
     </Window.Resources>
 
-    <DockPanel>
-        <TextBlock Text="{Binding Count, StringFormat='{}{0} Items'}"
-               DockPanel.Dock="Top"/>
+    <TabControl>
+        <TabItem Header="Settings">
+            <Label Content="Settings go here..." />
+        </TabItem>
 
-        <ItemsControl ItemsSource="{Binding}" Style="{StaticResource LogViewerStyle}">
-            <ItemsControl.Template>
-                <ControlTemplate>
-                    <ScrollViewer CanContentScroll="True">
-                        <ItemsPresenter/>
-                    </ScrollViewer>
-                </ControlTemplate>
-            </ItemsControl.Template>
-            <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                    <VirtualizingStackPanel IsItemsHost="True"/>
-                </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-        </ItemsControl>
-    </DockPanel>
+        <TabItem Header="Log">
+            <DockPanel>
+                <TextBlock Text="{Binding Count, StringFormat='{}{0} Items'}"
+                       DockPanel.Dock="Top"/>
+
+                <ItemsControl ItemsSource="{Binding}" Style="{StaticResource LogViewerStyle}">
+                    <ItemsControl.Template>
+                        <ControlTemplate>
+                            <ScrollViewer CanContentScroll="True">
+                                <ItemsPresenter/>
+                            </ScrollViewer>
+                        </ControlTemplate>
+                    </ItemsControl.Template>
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <VirtualizingStackPanel IsItemsHost="True"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                </ItemsControl>
+            </DockPanel>
+        </TabItem>
+    </TabControl>
 </Window>

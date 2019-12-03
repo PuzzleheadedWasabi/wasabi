@@ -10,30 +10,30 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace CHVP3
+namespace Wasabi
 {
     class VLCInterface
     {
 
         //private readonly string VLCPath;
         //private readonly string FilePath;
-        private readonly LogViewer LogViewer;
+        private readonly Wasasbi Wasabi;
 
         //private Process controllingProcess;
         private Socket vlcRcSocket;
 
         private BlockingCollection<string> Output = new BlockingCollection<string>();
 
-        public VLCInterface(LogViewer logViewer)
+        public VLCInterface(Wasasbi wasabi)
         {
-            this.LogViewer = logViewer;
+            this.Wasabi = wasabi;
         }
 
-        //public VLCInterface(string vlcPath, string filePath, LogViewer logViewer)
+        //public VLCInterface(string vlcPath, string filePath, Wasasbi logViewer)
         //{
         //    this.VLCPath = vlcPath;
         //    this.FilePath = filePath;
-        //    this.LogViewer = logViewer;
+        //    this.Wasasbi = logViewer;
         //}
 
         public bool CreateBindings()
@@ -41,13 +41,13 @@ namespace CHVP3
             try
             {
                 string vlcConfigFile =          Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "vlc\\vlcrc");
-                string vlcConfigFileBackup1 =   Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "vlc\\vlcrc-chvp-1.bak");
-                string vlcConfigFileBackup2 =   Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "vlc\\vlcrc-chvp-2.bak");
+                string vlcConfigFileBackup1 =   Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "vlc\\vlcrc-wasabi-1.bak");
+                string vlcConfigFileBackup2 =   Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "vlc\\vlcrc-wasabi-2.bak");
 
                 bool exists = File.Exists(vlcConfigFile);
                 if (!exists)
                 {
-                    LogViewer.Log("VLC Config file not found at path " + vlcConfigFile);
+                    Wasabi.Log("VLC Config file not found at path " + vlcConfigFile);
                     return false;
                 }
 
@@ -77,7 +77,7 @@ namespace CHVP3
                     int lineStatus = 0;
                     //Debug.WriteLine(line);
 
-                    if (line.Contains("#CHVP") && !line.Contains("#CHVP-DISABLED"))
+                    if (line.Contains("#WASABI") && !line.Contains("#WASABI-DISABLED"))
                     {
                         //lineStatus = 2;
                         continue;
@@ -101,18 +101,18 @@ namespace CHVP3
                 }
 
                 // TODO: This operation forcibly changes new lines from unix to windows (LF to CRLF)
-                newLines.Add("#CHVP");
-                newLines.Add("#CHVP These lines were added by CHVP. Feel free to remove these.");
+                newLines.Add("#WASABI");
+                newLines.Add("#WASABI These lines were added by Wasabi. Feel free to remove these.");
                 newLines.AddRange(newConfigLines);
                 File.WriteAllLines(vlcConfigFile, newLines.ToArray(), Encoding.UTF8);
 
-                LogViewer.Log("Succesfully added VLC hook");
+                Wasabi.Log("Succesfully added VLC hook");
                 return true;
 
             } catch (Exception e)
             {
-                LogViewer.Log("An exception occured while trying to edit VLC config file");
-                LogViewer.Log(e);
+                Wasabi.Log("An exception occured while trying to edit VLC config file");
+                Wasabi.Log(e);
                 return false;
             }
         }
@@ -135,7 +135,7 @@ namespace CHVP3
 
         public void Connect()
         {
-            LogViewer.Log("Waiting for VLC to start");
+            Wasabi.Log("Waiting for VLC to start");
 
             IPEndPoint socketAddress = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 54174);
             vlcRcSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
@@ -155,11 +155,11 @@ namespace CHVP3
 
             Task listener = Task.Factory.StartNew(() => Receive());
 
-            LogViewer.Log("Connected to VLC! Waiting for file to be opened");
+            Wasabi.Log("Connected to VLC! Waiting for file to be opened");
 
             BlockPlaying();
 
-            LogViewer.Log("Valid file detected. Initiating VLC control.");
+            Wasabi.Log("Valid file detected. Initiating VLC control.");
 
             //return controllingProcess;
         }
@@ -171,7 +171,7 @@ namespace CHVP3
                 string title = SendAndGet("get_title");
                 int duration = Int32.Parse(SendAndGet("get_length"));
 
-                LogViewer.Log("Title: " + title + ", Duration: " + duration);
+                Wasabi.Log("Title: " + title + ", Duration: " + duration);
 
                 // Check if the video is valid. This is an example
                 if (title.ToLower().Contains("wasabi")) return true;
@@ -210,7 +210,7 @@ namespace CHVP3
             }
             catch (SocketException)
             {
-                LogViewer.Log("Socket exception occured during SEND, VLC was probably closed. You'll have to restart the app to continue. TODO: handle this gracefully (see SendAndGet)");
+                Wasabi.Log("Socket exception occured during SEND, VLC was probably closed. You'll have to restart the app to continue. TODO: handle this gracefully (see SendAndGet)");
             }
         }
 
@@ -242,7 +242,7 @@ namespace CHVP3
                 } while (true);
             } catch (SocketException)
             {
-                LogViewer.Log("Socket exception occured during Receive, VLC was probably closed. You'll have to restart the app to continue. TODO: handle this gracefully (see SendAndGet)");
+                Wasabi.Log("Socket exception occured during Receive, VLC was probably closed. You'll have to restart the app to continue. TODO: handle this gracefully (see SendAndGet)");
             }
         }
 

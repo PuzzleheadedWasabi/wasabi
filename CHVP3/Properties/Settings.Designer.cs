@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace CHVP3.Properties
+namespace Wasabi.Properties
 {
 
 

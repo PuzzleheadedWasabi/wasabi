@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace CHVP3
+namespace Wasabi
 {
     public class CollapsibleLogEntry : LogEntry
     {

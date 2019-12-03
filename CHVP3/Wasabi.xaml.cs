@@ -11,7 +11,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using CHVP3.Properties;
+using Wasabi.Properties;
 using System.Collections.ObjectModel;
 using System.Threading;
 using System.Diagnostics;
@@ -23,10 +23,10 @@ using Microsoft.Win32;
 using System.Net;
 using System.Net.Sockets;
 
-namespace CHVP3
+namespace Wasabi
 {
 
-    public partial class LogViewer : Window
+    public partial class Wasasbi : Window
     {
 
         //private bool controllingProcess = false;
@@ -34,12 +34,12 @@ namespace CHVP3
 
         public ObservableCollection<LogEntry> LogEntries { get; set; }
 
-        public LogViewer()
+        public Wasasbi()
         {
             InitializeComponent();
 
             DataContext = LogEntries = new ObservableCollection<LogEntry>();
-            Log("Started CHVP");
+            Log("Started Wasabi");
 
             vlcInterface = new VLCInterface(this);
             vlcInterface.CreateBindings();

@@ -2,7 +2,7 @@
 using System.Windows;
 using System.ComponentModel;
 
-namespace CHVP3
+namespace Wasabi
 {
     public class PropertyChangedBase : INotifyPropertyChanged
     {

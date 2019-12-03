@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace CHVP3
+namespace Wasabi
 {
     public class LogEntry : PropertyChangedBase
     {

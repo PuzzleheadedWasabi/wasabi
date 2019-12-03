@@ -202,9 +202,16 @@ namespace CHVP3
 
         public void Send(string command)
         {
-            // send command to vlc socket, note \n is important
-            byte[] commandData = UTF8Encoding.UTF8.GetBytes(String.Format("{0}\n", command));
-            int sent = vlcRcSocket.Send(commandData);
+            try
+            {
+                // send command to vlc socket, note \n is important
+                byte[] commandData = UTF8Encoding.UTF8.GetBytes(String.Format("{0}\n", command));
+                int sent = vlcRcSocket.Send(commandData);
+            }
+            catch (SocketException)
+            {
+                LogViewer.Log("Socket exception occured during SEND, VLC was probably closed. You'll have to restart the app to continue. TODO: handle this gracefully (see SendAndGet)");
+            }
         }
 
         public void Receive()
@@ -235,7 +242,7 @@ namespace CHVP3
                 } while (true);
             } catch (SocketException)
             {
-                LogViewer.Log("Socket exception occured, VLC was probably closed. You'll have to restart the app to continue. TODO: handle this gracefully (see SendAndGet)");
+                LogViewer.Log("Socket exception occured during Receive, VLC was probably closed. You'll have to restart the app to continue. TODO: handle this gracefully (see SendAndGet)");
             }
         }
 

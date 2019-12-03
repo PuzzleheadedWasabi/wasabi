@@ -75,7 +75,7 @@ namespace CHVP3
                 Log("Connected to VLC process!");
 
                 Thread.Sleep(700);
-                Log("Example: Seeking to 300 seconds");
+                Log("Example: Seeking to 20 seconds");
                 vlcInterface.Send("seek 20");
 
                 Thread.Sleep(700);

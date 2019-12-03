@@ -15,11 +15,11 @@ namespace CHVP3
     class VLCInterface
     {
 
-        private readonly string VLCPath;
-        private readonly string FilePath;
+        //private readonly string VLCPath;
+        //private readonly string FilePath;
         private readonly LogViewer LogViewer;
 
-        private Process controllingProcess;
+        //private Process controllingProcess;
         private Socket vlcRcSocket;
 
         private BlockingCollection<string> Output = new BlockingCollection<string>();
@@ -29,14 +29,12 @@ namespace CHVP3
             this.LogViewer = logViewer;
         }
 
-        public VLCInterface(string vlcPath, string filePath, LogViewer logViewer)
-        {
-            this.VLCPath = vlcPath;
-            this.FilePath = filePath;
-            this.LogViewer = logViewer;
-        }
-
-
+        //public VLCInterface(string vlcPath, string filePath, LogViewer logViewer)
+        //{
+        //    this.VLCPath = vlcPath;
+        //    this.FilePath = filePath;
+        //    this.LogViewer = logViewer;
+        //}
 
         public bool CreateBindings()
         {
@@ -135,7 +133,7 @@ namespace CHVP3
         //    //controllingProcess.Kill();
         //}
 
-        public Process Connect()
+        public void Connect()
         {
             LogViewer.Log("Waiting for VLC to start");
 
@@ -163,7 +161,7 @@ namespace CHVP3
 
             LogViewer.Log("Valid file detected. Initiating VLC control.");
 
-            return controllingProcess;
+            //return controllingProcess;
         }
 
         public bool BlockPlaying()
@@ -237,7 +235,7 @@ namespace CHVP3
                 } while (true);
             } catch (SocketException)
             {
-                Debug.WriteLine("Socket exception occured, VLC was probably closed");
+                LogViewer.Log("Socket exception occured, VLC was probably closed. You'll have to restart the app to continue. TODO: handle this gracefully (see SendAndGet)");
             }
         }
 

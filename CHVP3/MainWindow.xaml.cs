@@ -29,6 +29,9 @@ namespace CHVP3
     public partial class LogViewer : Window
     {
 
+        private bool controllingProcess = false;
+        private VLCInterface vlcInterface = null;
+
         public ObservableCollection<LogEntry> LogEntries { get; set; }
 
         public LogViewer()
@@ -36,133 +39,107 @@ namespace CHVP3
             InitializeComponent();
 
             DataContext = LogEntries = new ObservableCollection<LogEntry>();
-
             Log("Started CHVP");
 
-            Timer = new Timer(x => CheckIfVLCRunning(), null, 0, 300);
+            vlcInterface = new VLCInterface(this);
+            vlcInterface.CreateBindings();
+
+            Thread backgroundThread = new Thread(x => CheckIfVLCRunning());
+            backgroundThread.IsBackground = true;
+            backgroundThread.Start();
+
+            //Timer = new Timer(x => CheckIfVLCRunning(), null, 0, 3000);
         }
 
-        private Process controllingProcess = null;
         private Timer Timer;
-        private Random random = new Random();
+        //private Random random = new Random();
 
-        // Returns the file, or null if no file
-        private string[] GetVLCFile(Process process)
+            
+        private void ControlVLC()
         {
-            string cli = GetCommandLine(process);
 
-            // First get the path to the vlc executable
-            string[] chunks = cli.Split('\"');
-
-            if (chunks.Length <= 1) return null;
-
-            string pathToVLC = chunks[1];
-            Log("Path to VLC: " + pathToVLC);
-
-            string check = "--started-from-file";
-            int index = cli.IndexOf(check);
-
-            if (index == -1) return null;
-
-            cli = cli.Substring(index + check.Length);
-            cli = cli.TrimStart();
-            Debug.WriteLine(cli);
-
-            chunks = cli.Split('\"');
-
-            if (chunks.Length <= 1) return null;
-
-            // The first index should be empty or an equals sign or something, cbs checking
-            string filePath = chunks[1];
-            Debug.WriteLine(filePath);
-
-            bool exists = File.Exists(filePath);
-            Debug.WriteLine(exists);
-
-            if (!exists) return null;
-
-            return new string[] { pathToVLC, filePath };
-        }
-        
-        private void ControlVLC(Process process, string[] vlcDetails)
-        {
-            process.Kill();
-
-            VLCInterface vlcInterface = new VLCInterface(vlcDetails[0], vlcDetails[1], Log);
+            controllingProcess = true;
 
             try
             {
-                controllingProcess = vlcInterface.Connect();
+                //controllingProcess = vlcInterface.Connect();
+                //controllingProcess = process;
 
                 Log("Connected to VLC process!");
 
                 Thread.Sleep(700);
+                Log("Example: Seeking to 300 seconds");
                 vlcInterface.Send("seek 20");
 
                 Thread.Sleep(700);
+                Log("Example: Pausing playback");
                 vlcInterface.Send("pause");
 
                 Thread.Sleep(700);
+                Log("Example: Resuming playback");
                 vlcInterface.Send("pause");
-                Log("Time is " + vlcInterface.GetTime());
-
+                Log("Example: The current time is " + vlcInterface.GetTime());
+                
                 Thread.Sleep(700);
 
-                vlcInterface.Send("quit"); // close vlc rc interface and disconnect
+                Log("Example: Quitting VLC");
                 vlcInterface.Disconnect();
             }
             finally
             {
-                vlcInterface.Kill();
+                //vlcInterface.Kill();
             }
 
             //Thread.Sleep(2000);
             //controllingProcess.StandardInput.WriteLine("pause");
 
-            controllingProcess.WaitForExit();
+            //controllingProcess.WaitForExit();
 
-            Log("Process has exited!");
-            controllingProcess = null;
+            //Log("Process has exited!");
+            controllingProcess = false;
 
         }
 
         private void CheckIfVLCRunning()
         {
-            Log("CheckIfVLCRunning");
-
-            Process vlc = GetVLCProcess();
-            if (vlc == null) return;
-
-            string[] vlcDetails = GetVLCFile(vlc);
-            if (vlcDetails == null) return;
-
-            ControlVLC(vlc, vlcDetails);
-
-        }
-
-        private Process GetVLCProcess()
-        {
-
-            // If we are already controlling a process, then just exit
-            if (controllingProcess != null) return null;
-
-            Process[] processes = Process.GetProcesses();
-
-            // Only support single VLC process
-            foreach (Process process in processes)
+            while(true)
             {
-                if (!process.ProcessName.ToLower().Equals("vlc")) continue;
-                String cli = GetCommandLine(process);
-                if (cli == null) continue;
-                if (cli.ToLower().Contains("--intf rc")) continue;
-                Debug.WriteLine("Found VLC, ID: {0}, CLI: {1}", process.Id, GetCommandLine(process));
-                return process;
-            }
+                vlcInterface.Connect();
+                ControlVLC();
 
-            return null;
+                Log("Re-initiating loop in 2 seconds...");
+                Thread.Sleep(2000);
+            }
         }
 
-        private void Log(string message)
+        //private Process GetVLCProcess()
+        //{
+
+        //    // If we are already controlling a process, then just exit
+        //    if (controllingProcess != null) return null;
+
+        //    Process[] processes = Process.GetProcesses();
+
+        //    // Only support single VLC process
+        //    foreach (Process process in processes)
+        //    {
+        //        if (!process.ProcessName.ToLower().Equals("vlc")) continue;
+        //        String cli = GetCommandLine(process);
+        //        if (cli == null) continue;
+        //        if (cli.ToLower().Contains("--intf rc")) continue;
+        //        Debug.WriteLine("Found VLC, ID: {0}, CLI: {1}", process.Id, GetCommandLine(process));
+        //        return process;
+        //    }
+
+        //    return null;
+        //}
+
+        public void Log(Exception e)
+        {
+            Dispatcher.BeginInvoke((Action)(() => LogEntries.Add(new LogEntry(e.ToString())) ));
+        }
+
+        public void Log(string message)
         {
             Dispatcher.BeginInvoke((Action)(() => LogEntries.Add(new LogEntry(message))));
         }

@@ -17,55 +17,171 @@ namespace CHVP3
 
         private readonly string VLCPath;
         private readonly string FilePath;
-        private readonly Action<string> Log;
+        private readonly LogViewer LogViewer;
 
         private Process controllingProcess;
         private Socket vlcRcSocket;
 
         private BlockingCollection<string> Output = new BlockingCollection<string>();
 
-        public VLCInterface(string vlcPath, string filePath, Action<string> log)
+        public VLCInterface(LogViewer logViewer)
+        {
+            this.LogViewer = logViewer;
+        }
+
+        public VLCInterface(string vlcPath, string filePath, LogViewer logViewer)
         {
             this.VLCPath = vlcPath;
             this.FilePath = filePath;
-            this.Log = log;
+            this.LogViewer = logViewer;
         }
+
+
+
+        public bool CreateBindings()
+        {
+            try
+            {
+                string vlcConfigFile =          Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "vlc\\vlcrc");
+                string vlcConfigFileBackup1 =   Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "vlc\\vlcrc-chvp-1.bak");
+                string vlcConfigFileBackup2 =   Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "vlc\\vlcrc-chvp-2.bak");
+
+                bool exists = File.Exists(vlcConfigFile);
+                if (!exists)
+                {
+                    LogViewer.Log("VLC Config file not found at path " + vlcConfigFile);
+                    return false;
+                }
+
+                if (!File.Exists(vlcConfigFileBackup1)) File.Copy(vlcConfigFile, vlcConfigFileBackup1);
+                if (File.Exists(vlcConfigFileBackup2)) File.Delete(vlcConfigFileBackup2);
+                File.Copy(vlcConfigFile, vlcConfigFileBackup2);
+
+                string[] lines = File.ReadAllLines(vlcConfigFile);
+                List<string> newLines = new List<string>();
+
+                //for (int i = 0; i < lines.Length; i++)     
+                //string line = lines[i];
+
+                // Copy all lines that don't have our config items
+                string[] importantLines = new string[] { "extraintf", "rc-quiet", "rc-host" };
+                string[] newConfigLines = new string[] {
+                    "extraintf=oldrc",
+                    "rc-quiet=1",
+                    "rc-host=127.0.0.1:54174"
+                };
+
+                // Copy all good lines
+                foreach (string line in lines)
+                {
+
+                    // 0 = line is fine, 1 = line is bad and needs to be disabled, 2 = line is chvp line
+                    int lineStatus = 0;
+                    //Debug.WriteLine(line);
+
+                    if (line.Contains("#CHVP") && !line.Contains("#CHVP-DISABLED"))
+                    {
+                        //lineStatus = 2;
+                        continue;
+                    }
+                    else
+                    {
+                        foreach (string importantline in importantLines)
+                        {
+
+                            if (line.ToLower().StartsWith(importantline))
+                            {
+                                lineStatus = 1;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (lineStatus == 0) newLines.Add(line);
+                    //else if (lineStatus == 1) newLines.Add("#CHVP-DISABLED " + line);
+
+                }
+
+                // TODO: This operation forcibly changes new lines from unix to windows (LF to CRLF)
+                newLines.Add("#CHVP");
+                newLines.Add("#CHVP These lines were added by CHVP. Feel free to remove these.");
+                newLines.AddRange(newConfigLines);
+                File.WriteAllLines(vlcConfigFile, newLines.ToArray(), Encoding.UTF8);
+
+                LogViewer.Log("Succesfully added VLC hook");
+                return true;
+
+            } catch (Exception e)
+            {
+                LogViewer.Log("An exception occured while trying to edit VLC config file");
+                LogViewer.Log(e);
+                return false;
+            }
+        }
+
+
+
+
+
 
         public void Disconnect()
         {
+            Send("quit"); // close vlc rc interface and disconnect
             vlcRcSocket.Disconnect(false);
         }
 
-        public void Kill()
-        {
-            controllingProcess.Kill();
-        }
+        //public void Kill()
+        //{
+        //    //controllingProcess.Kill();
+        //}
 
         public Process Connect()
         {
+            LogViewer.Log("Waiting for VLC to start");
+
             IPEndPoint socketAddress = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 54174);
-            
-            string args = "--fullscreen -I rc --rc-host " + socketAddress.ToString() + $" \"{FilePath}\"";
-            //string args = "-I rc --rc-host " + socketAddress.ToString() + $" \"{FilePath}\"";
-
-            Log("Running command: " + args);
-
-            controllingProcess = new Process();
-            controllingProcess.StartInfo.UseShellExecute = false;
-            controllingProcess.StartInfo.FileName = VLCPath;
-            controllingProcess.StartInfo.Arguments = args;
-            controllingProcess.Start();
-
-            Log("PID of controllingProcess is " + controllingProcess.Id);
-
             vlcRcSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            vlcRcSocket.Connect(socketAddress);
+
+            // TODO: some mechanism to tell it to stop listening if another api succeeds connection first
+            bool connected = false;
+            while (!connected)
+            {
+                try
+                {
+                    vlcRcSocket.Connect(socketAddress);
+                    connected = true;
+                } catch (SocketException) {}
+
+                Thread.Sleep(500);
+            }
 
             Task listener = Task.Factory.StartNew(() => Receive());
+
+            LogViewer.Log("Connected to VLC! Waiting for file to be opened");
+
+            BlockPlaying();
+
+            LogViewer.Log("Valid file detected. Initiating VLC control.");
 
             return controllingProcess;
         }
 
+        public bool BlockPlaying()
+        {
+            while(true)
+            {
+                string title = SendAndGet("get_title");
+                int duration = Int32.Parse(SendAndGet("get_length"));
+
+                LogViewer.Log("Title: " + title + ", Duration: " + duration);
+
+                // Check if the video is valid. This is an example
+                if (title.ToLower().Contains("wasabi")) return true;
+
+                Thread.Sleep(1000);
+            }
+            
+        }
 
         public String GetTime()
         {

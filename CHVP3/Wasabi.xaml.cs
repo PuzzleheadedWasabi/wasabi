@@ -117,6 +117,12 @@ namespace Wasabi
             Dispatcher.BeginInvoke((Action)(() => LogEntries.Add(new LogEntry(message))));
         }
 
+        private void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e)
+        {
+            Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri));
+            e.Handled = true;
+        }
+
     }
 
 }

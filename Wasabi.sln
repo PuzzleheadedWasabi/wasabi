@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.28010.2048
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CHVP3", "CHVP3\CHVP3.csproj", "{BCA38DF4-1EE2-4E3A-8406-3437280FDB79}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Wasabi", "CHVP3\Wasabi.csproj", "{BCA38DF4-1EE2-4E3A-8406-3437280FDB79}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

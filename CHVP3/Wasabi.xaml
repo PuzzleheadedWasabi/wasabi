@@ -114,5 +114,14 @@
         <TabItem Header="Settings">
             <Label Content="Settings go here..." />
         </TabItem>
+
+        <TabItem Header="GitHub">
+            <TextBlock>
+                <Hyperlink NavigateUri="https://github.com/PuzzleheadedWasabi/wasabi" RequestNavigate="Hyperlink_RequestNavigate">
+                    https://github.com/PuzzleheadedWasabi/wasabi
+                </Hyperlink>
+            </TextBlock>
+        </TabItem>
+        
     </TabControl>
 </Window>
